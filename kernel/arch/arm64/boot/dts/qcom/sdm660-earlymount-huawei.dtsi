@@ -1,0 +1,59 @@
+ /{
+         firmware {
+                 huawei {
+                         compatible = "huawei,firmware";
+                         fstab {
+                                 compatible = "huawei,fstab";
+                                 cust {
+                                         compatible = "android,cust";
+                                         dev = "/dev/block/platform/soc/c0c4000.sdhci/by-name/cust";
+                                         type = "ext4";
+                                         mnt_flags = "ro,barrier=1,discard";
+                                         fsmgr_flags = "wait,verify";
+                                         status = "ok";
+                                 };
+                                 product {
+                                         compatible = "android,product";
+                                         dev = "/dev/block/platform/soc/c0c4000.sdhci/by-name/product";
+                                         type = "ext4";
+                                         mnt_flags = "ro,barrier=1,discard";
+                                         fsmgr_flags = "wait,verify";
+                                         status = "ok";
+                                 };
+                                 version {
+                                         compatible = "android,version";
+                                         dev = "/dev/block/platform/soc/c0c4000.sdhci/by-name/version";
+                                         type = "ext4";
+                                         mnt_flags = "ro,barrier=1,discard";
+                                         fsmgr_flags = "wait,verify";
+                                         status = "ok";
+                                 };
+                                 rrecord {
+                                          compatible = "android,rrecord";
+                                          dev = "/dev/block/platform/soc/c0c4000.sdhci/by-name/rrecord";
+                                          type = "emmc";
+                                          mnt_flags = "defaults";
+                                          fsmgr_flags = "defaults";
+                                          status = "ok";
+                                  };
+                                  misc {
+                                          compatible = "android,misc";
+                                          dev = "/dev/block/platform/soc/c0c4000.sdhci/by-name/misc";
+                                          type = "emmc";
+                                          mnt_flags = "defaults";
+                                          fsmgr_flags = "defaults";
+                                          status = "ok";
+                                  };
+                                 preload {
+                                         compatible = "android,preload";
+                                         dev = "/dev/block/platform/soc/c0c4000.sdhci/by-name/preload";
+                                         type = "ext4";
+                                         mnt_flags = "ro,barrier=1,discard";
+                                         fsmgr_flags = "wait,verify";
+                                         status = "ok";
+                                 };
+                     };
+                 };
+         };
+ };
+
