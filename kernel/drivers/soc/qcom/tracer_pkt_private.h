@@ -45,6 +45,7 @@ TRACE_EVENT(tracer_pkt_event,
 		__entry->cc1, __entry->cc2, __entry->cc3, __entry->id)
 );
 #endif /*_TRACER_PKT_TRACE_H*/
-
+#undef TRACE_INCLUDE_PATH
+#define TRACE_INCLUDE_PATH ../../drivers/soc/qcom
 #include <trace/define_trace.h>
 
