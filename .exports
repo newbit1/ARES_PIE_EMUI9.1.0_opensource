@@ -3,6 +3,8 @@ export LINUX_GCC_CROSS_COMPILE_PREBUILTS_BIN=$(pwd)/../aarch64-linux-android-4.9
 export PATH=$PATH:$(pwd)/../aarch64-linux-android-4.9/bin
 cd kernel
 echo "possible commands are"
+echo "make ARCH=arm64 distclean"
+echo "make ARCH=arm64 merge_sdm660_64_defconfig"
 echo "make ARCH=arm64 FIRMWARE_sdm660_64_defconfig"
 echo "make ARCH=arm64 xconfig"
 echo 'time make ARCH=arm64 -j$(nproc)'
