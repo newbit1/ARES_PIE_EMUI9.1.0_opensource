@@ -148,7 +148,13 @@ static int __wlan_hdd_cfg80211_set_gateway_params(struct wiphy *wiphy,
 	hdd_info("session id: %d", req.session_id);
 	hdd_info("ipv4 addr type: %d", req.ipv4_addr_type);
 	hdd_info("ipv6 addr type: %d", req.ipv6_addr_type);
+#ifdef CONFIG_HUAWEI_WIFI
+	hdd_info("gw mac addr: %02x:%02x:**:**:%02x:%02x",
+                req.gw_mac_addr.bytes[0],req.gw_mac_addr.bytes[1],
+                req.gw_mac_addr.bytes[4],req.gw_mac_addr.bytes[5]);
+#else
 	hdd_info("gw mac addr: %pM", req.gw_mac_addr.bytes);
+#endif
 	hdd_info("ipv4 addr: %pI4", req.ipv4_addr);
 	hdd_info("ipv6 addr: %pI6c", req.ipv6_addr);
 

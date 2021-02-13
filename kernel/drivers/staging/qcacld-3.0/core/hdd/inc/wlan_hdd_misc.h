@@ -29,7 +29,11 @@
 #endif
 
 #ifdef MSM_PLATFORM
+#ifdef CONFIG_HUAWEI_WIFI
+#define WLAN_INI_FILE              "../../vendor/etc/wifi/WCNSS_qcom_cfg.ini"
+#else
 #define WLAN_INI_FILE              "wlan/qca_cld/" PREFIX "WCNSS_qcom_cfg.ini"
+#endif /* CONFIG_HUAWEI_WIFI */
 #define WLAN_MAC_FILE              "wlan/qca_cld/" PREFIX "wlan_mac.bin"
 #else
 #define WLAN_INI_FILE              "wlan/" PREFIX "qcom_cfg.ini"

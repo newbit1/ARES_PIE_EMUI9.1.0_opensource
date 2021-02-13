@@ -827,10 +827,17 @@ wlansap_roam_process_infra_assoc_ind(ptSapContext sap_ctx,
 		*ret_status = QDF_STATUS_E_FAILURE;
 		}
 	} else {
+#ifdef CONFIG_HUAWEI_WIFI
+		QDF_TRACE(QDF_MODULE_ID_SAP, QDF_TRACE_LEVEL_WARN,
+			  FL("CSR roam_result = (%d) MAC ("HW_MAC_ADDRESS_STR") not allowed"),
+			  roam_result,
+			  HW_MAC_ADDR_ARRAY(csr_roam_info->peerMac.bytes));
+#else
 		QDF_TRACE(QDF_MODULE_ID_SAP, QDF_TRACE_LEVEL_WARN,
 			  FL("CSR roam_result = (%d) MAC ("MAC_ADDRESS_STR") not allowed"),
 			  roam_result,
 			  MAC_ADDR_ARRAY(csr_roam_info->peerMac.bytes));
+#endif
 		*ret_status = QDF_STATUS_E_FAILURE;
 	}
 	return;

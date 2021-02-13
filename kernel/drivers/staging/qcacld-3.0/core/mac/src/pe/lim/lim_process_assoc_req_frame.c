@@ -746,9 +746,13 @@ static bool lim_check_wpa_rsn_ie(tpPESession session, tpAniSirGlobal mac_ctx,
 	 */
 	qdf_mem_set((uint8_t *)&dot11f_ie_rsn, sizeof(dot11f_ie_rsn), 0);
 	qdf_mem_set((uint8_t *)&dot11f_ie_wpa, sizeof(dot11f_ie_wpa), 0);
-
-	pe_err("RSN enabled auth, Re/Assoc req from STA: "
-	       MAC_ADDRESS_STR,	MAC_ADDR_ARRAY(hdr->sa));
+#ifdef CONFIG_HUAWEI_WIFI
+        pe_err("RSN enabled auth, Re/Assoc req from STA: "
+            HW_MAC_ADDRESS_STR, HW_MAC_ADDR_ARRAY(hdr->sa));
+#else
+        pe_err("RSN enabled auth, Re/Assoc req from STA: "
+            MAC_ADDRESS_STR, MAC_ADDR_ARRAY(hdr->sa));
+#endif
 	if (assoc_req->rsnPresent) {
 		if (!assoc_req->rsn.length) {
 			pe_warn("Re/Assoc rejected from: "
@@ -1980,9 +1984,15 @@ void lim_process_assoc_req_frame(tpAniSirGlobal mac_ctx, uint8_t *rx_pkt_info,
 		goto error;
 
 	/* STA is Associated ! */
+#ifdef CONFIG_HUAWEI_WIFI
+	pe_err("Received: %s Req  successful from " HW_MAC_ADDRESS_STR,
+		(LIM_ASSOC == sub_type) ? "Assoc" : "ReAssoc",
+		HW_MAC_ADDR_ARRAY(hdr->sa));
+#else
 	pe_err("Received: %s Req  successful from " MAC_ADDRESS_STR,
 		(LIM_ASSOC == sub_type) ? "Assoc" : "ReAssoc",
 		MAC_ADDR_ARRAY(hdr->sa));
+#endif
 
 	/*
 	 * AID for this association will be same as the peer Index used in DPH

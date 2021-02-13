@@ -26,6 +26,196 @@ endif
 endif
 
 ifeq ($(KERNEL_BUILD),1)
+#config copy same as build ko:  begin
+	# These are configurable via Kconfig for kernel-based builds
+	# Need to explicitly configure for Android-based builds
+
+	ifneq ($(DEVELOPER_DISABLE_BUILD_TIMESTAMP),y)
+	ifneq ($(WLAN_DISABLE_BUILD_TAG),y)
+	CONFIG_BUILD_TAG := y
+	endif
+	endif
+
+	
+	ifeq ($(CONFIG_ARCH_MDM9630), y)
+	CONFIG_MOBILE_ROUTER := y
+	endif
+
+	ifeq ($(CONFIG_ARCH_MDM9640), y)
+	CONFIG_MOBILE_ROUTER := y
+	endif
+
+	ifeq ($(CONFIG_ARCH_SDX20), y)
+	CONFIG_MOBILE_ROUTER := y
+	endif
+	ifeq ($(CONFIG_ARCH_SDXPOORWILLS), y)
+	CONFIG_MOBILE_ROUTER := y
+	endif
+	# If platform wants to support two driver base on this source
+	# code, below feature WLAN_DISABLE_EXPORT_SYMBOL needs to be
+	# enabled, otherwise when loading the second the driver,
+	# it will hit error of duplicate symbol.
+	ifeq ($(CONFIG_ARCH_SDX20), y)
+	CONFIG_WLAN_DISABLE_EXPORT_SYMBOL := y
+	endif
+	ifeq ($(CONFIG_ARCH_SDXPOORWILLS), y)
+	CONFIG_WLAN_DISABLE_EXPORT_SYMBOL := y
+	endif
+	ifeq ($(CONFIG_ARCH_MSM8917), y)
+		ifeq ($(CONFIG_ROME_IF), sdio)
+			CONFIG_WLAN_SYNC_TSF_PLUS := y
+		endif
+	endif
+
+	#Flag to enable Legacy Fast Roaming2(LFR2)
+	CONFIG_QCACLD_WLAN_LFR2 := y
+	#Flag to enable Legacy Fast Roaming3(LFR3)
+	ifneq ($(CONFIG_ARCH_SDX20), y)
+	CONFIG_QCACLD_WLAN_LFR3 := y
+	endif
+
+	# JB kernel has CPU enablement patches, so enable
+	ifeq ($(CONFIG_ROME_IF),pci)
+		CONFIG_PRIMA_WLAN_11AC_HIGH_TP := y
+	endif
+	ifeq ($(CONFIG_ROME_IF),usb)
+		CONFIG_PRIMA_WLAN_11AC_HIGH_TP := n
+	endif
+	ifeq ($(CONFIG_ROME_IF),sdio)
+		CONFIG_PRIMA_WLAN_11AC_HIGH_TP := n
+	endif
+
+	ifneq ($(CONFIG_MOBILE_ROUTER), y)
+	#Flag to enable TDLS feature
+	CONFIG_QCOM_TDLS := y
+	endif
+
+	CONFIG_QCACLD_FEATURE_GREEN_AP := y
+
+	ifeq ($(CONFIG_ARCH_MSM8998), y)
+	CONFIG_QCACLD_FEATURE_METERING := y
+	endif
+
+	ifeq ($(CONFIG_ARCH_SDM660), y)
+	CONFIG_QCACLD_FEATURE_METERING := y
+	endif
+
+	ifeq ($(CONFIG_ARCH_SDM630), y)
+	CONFIG_QCACLD_FEATURE_METERING := y
+	endif
+
+	#Flag to enable Fast Transition (11r) feature
+	CONFIG_QCOM_VOWIFI_11R := y
+
+	ifneq ($(CONFIG_ARCH_SDX20), y)
+	#Flag to enable FILS Feature (11ai)
+	CONFIG_WLAN_FEATURE_FILS := y
+	endif
+
+	ifneq ($(CONFIG_QCA_CLD_WLAN),)
+		ifeq (y,$(findstring y,$(CONFIG_CNSS) $(CONFIG_ICNSS)))
+		#Flag to enable Protected Managment Frames (11w) feature
+		CONFIG_WLAN_FEATURE_11W := y
+		#Flag to enable LTE CoEx feature
+		CONFIG_QCOM_LTE_COEX := y
+			ifneq ($(CONFIG_MOBILE_ROUTER), y)
+			#Flag to enable LPSS feature
+			CONFIG_WLAN_FEATURE_LPSS := y
+			endif
+		endif
+	endif
+
+	#Flag to enable Protected Managment Frames (11w) feature
+	ifeq ($(CONFIG_ROME_IF),usb)
+		CONFIG_WLAN_FEATURE_11W := y
+	endif
+	ifeq ($(CONFIG_ROME_IF),sdio)
+		CONFIG_WLAN_FEATURE_11W := y
+	endif
+
+	#Flag to enable the tx desc sanity check
+	ifeq ($(CONFIG_ROME_IF),usb)
+		CONFIG_QCA_TXDESC_SANITY_CHECKS := y
+	endif
+
+	ifneq ($(CONFIG_MOBILE_ROUTER), y)
+		#Flag to enable NAN
+		CONFIG_QCACLD_FEATURE_NAN := y
+	endif
+
+	ifneq ($(CONFIG_MOBILE_ROUTER), y)
+		#Flag to enable NAN Data path
+		CONFIG_WLAN_FEATURE_NAN_DATAPATH := y
+	endif
+
+	#Flag to enable Linux QCMBR feature as default feature
+	ifeq ($(CONFIG_ROME_IF),usb)
+		CONFIG_LINUX_QCMBR :=y
+	endif
+
+	CONFIG_MPC_UT_FRAMEWORK := y
+
+	#Flag to enable offload packets feature
+	CONFIG_WLAN_OFFLOAD_PACKETS := y
+
+	#enable TSF get feature
+	CONFIG_WLAN_SYNC_TSF := y
+	#Enable DSRC feature
+
+	ifeq ($(CONFIG_QCA_WIFI_SDIO), 1)
+	CONFIG_WLAN_FEATURE_DSRC := y
+	endif
+
+	#enable spectral scan feature
+	CONFIG_WLAN_SPECTRAL_SCAN := y
+
+ifneq ($(CONFIG_ROME_IF),sdio)
+	#Flag to enable DISA
+	CONFIG_WLAN_FEATURE_DISA := y
+	#Flag to enable OWE
+	CONFIG_WLAN_FEATURE_OWE := y
+
+	#Flag to enable GMAC
+	CONFIG_WLAN_FEATURE_GMAC := y
+
+	#Flag to enable SAE
+	CONFIG_WLAN_FEATURE_SAE := y
+	
+	#Flag to enable Fast Path feature
+	CONFIG_WLAN_FASTPATH := y
+
+	# Flag to enable NAPI
+	CONFIG_WLAN_NAPI := y
+	CONFIG_WLAN_NAPI_DEBUG := n
+
+	# Flag to enable FW based TX Flow control
+	ifeq ($(CONFIG_CNSS_EOS),y)
+		CONFIG_WLAN_TX_FLOW_CONTROL_V2 := y
+	else
+		CONFIG_WLAN_TX_FLOW_CONTROL_V2 := n
+	endif
+
+	# Flag to enable LRO (Large Receive Offload)
+	ifeq ($(CONFIG_INET_LRO), y)
+		ifeq ($(VERSION), 4)
+			CONFIG_WLAN_LRO := y
+		else
+			CONFIG_WLAN_LRO := n
+		endif
+	endif
+endif
+
+ifeq ($(CONFIG_ROME_IF), snoc)
+	CONFIG_WLAN_TX_FLOW_CONTROL_V2 := y
+endif
+
+	# Flag to enable LFR Subnet Detection
+	CONFIG_LFR_SUBNET_DETECTION := y
+
+	# Flag to enable MCC to SCC switch feature
+	CONFIG_MCC_TO_SCC_SWITCH := y
+#config copy same as build ko end
+$(warning CONFIG_with_build_kernel)
 	# These are provided in external module based builds
 	# Need to explicitly define for Kernel-based builds
 	MODNAME := wlan
@@ -38,6 +228,7 @@ endif
 WLAN_OPEN_SOURCE := 1
 
 ifeq ($(KERNEL_BUILD), 0)
+	#$(warning CONFIG_with_build_ko)
 	# These are configurable via Kconfig for kernel-based builds
 	# Need to explicitly configure for Android-based builds
 
@@ -484,6 +675,8 @@ HDD_OBJS := 	$(HDD_SRC_DIR)/wlan_hdd_assoc.o \
 		$(HDD_SRC_DIR)/wlan_hdd_wext.o \
 		$(HDD_SRC_DIR)/wlan_hdd_wmm.o \
 		$(HDD_SRC_DIR)/wlan_hdd_wowl.o
+
+include $(WLAN_ROOT)/hw_qca_decoupled/Kbuild
 
 ifeq ($(CONFIG_WLAN_SYSFS), y)
 HDD_OBJS += $(HDD_SRC_DIR)/wlan_hdd_sysfs.o

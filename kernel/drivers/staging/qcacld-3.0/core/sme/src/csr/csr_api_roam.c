@@ -11778,11 +11778,17 @@ csr_roam_chk_lnk_disassoc_ind(tpAniSirGlobal mac_ctx, tSirSmeRsp *msg_ptr)
 		qdf_mem_free(cmd);
 		return;
 	}
-
+#ifdef CONFIG_HUAWEI_WIFI
+	sme_err("DISASSOCIATION from peer =" HW_MAC_ADDRESS_STR "reason: %d status: %d session: %d",
+		HW_MAC_ADDR_ARRAY(pDisassocInd->peer_macaddr.bytes),
+		pDisassocInd->reasonCode,
+		pDisassocInd->statusCode, sessionId);
+#else
 	sme_err("DISASSOCIATION from peer =" MAC_ADDRESS_STR "reason: %d status: %d session: %d",
 		MAC_ADDR_ARRAY(pDisassocInd->peer_macaddr.bytes),
 		pDisassocInd->reasonCode,
 		pDisassocInd->statusCode, sessionId);
+#endif
 	/*
 	 * If we are in neighbor preauth done state then on receiving
 	 * disassoc or deauth we dont roam instead we just disassoc
@@ -15923,12 +15929,21 @@ QDF_STATUS csr_send_join_req_msg(tpAniSirGlobal pMac, uint32_t sessionId,
 			csr_join_req->ssId.length = 0;
 		qdf_mem_copy(&csr_join_req->selfMacAddr, &pSession->selfMacAddr,
 			     sizeof(tSirMacAddr));
+#ifdef CONFIG_HUAWEI_WIFI
+		sme_err("Connecting to ssid:%.*s bssid: "HW_MAC_ADDRESS_STR" rssi: %d channel: %d country_code: %c%c",
+			pIes->SSID.num_ssid, pIes->SSID.ssid,
+			HW_MAC_ADDR_ARRAY(pBssDescription->bssId),
+			pBssDescription->rssi, pBssDescription->channelId,
+			pMac->scan.countryCodeCurrent[0],
+			pMac->scan.countryCodeCurrent[1]);
+#else
 		sme_err("Connecting to ssid:%.*s bssid: "MAC_ADDRESS_STR" rssi: %d channel: %d country_code: %c%c",
 			pIes->SSID.num_ssid, pIes->SSID.ssid,
 			MAC_ADDR_ARRAY(pBssDescription->bssId),
 			pBssDescription->rssi, pBssDescription->channelId,
 			pMac->scan.countryCodeCurrent[0],
 			pMac->scan.countryCodeCurrent[1]);
+#endif
 		/* bsstype */
 		dwTmp = csr_translate_bsstype_to_mac_type
 						(pProfile->BSSType);

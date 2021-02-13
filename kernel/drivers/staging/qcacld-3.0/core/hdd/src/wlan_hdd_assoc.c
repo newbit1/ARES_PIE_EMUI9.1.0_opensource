@@ -1395,10 +1395,17 @@ static void hdd_send_association_event(struct net_device *dev,
 			}
 		}
 #endif
-		hdd_info("wlan: " MAC_ADDRESS_STR " connected to "
+#ifdef CONFIG_HUAWEI_WIFI
+		pr_info("wlan: " HW_MAC_ADDRESS_STR " connected to "
+			HW_MAC_ADDRESS_STR "\n",
+			HW_MAC_ADDR_ARRAY(pAdapter->macAddressCurrent.bytes),
+			HW_MAC_ADDR_ARRAY(wrqu.ap_addr.sa_data));
+#else
+		pr_info("wlan: " MAC_ADDRESS_STR " connected to "
 			MAC_ADDRESS_STR "\n",
 			MAC_ADDR_ARRAY(pAdapter->macAddressCurrent.bytes),
 			MAC_ADDR_ARRAY(wrqu.ap_addr.sa_data));
+#endif
 		hdd_send_update_beacon_ies_event(pAdapter, pCsrRoamInfo);
 
 		/*
@@ -2504,9 +2511,15 @@ static QDF_STATUS hdd_roam_set_key_complete_handler(hdd_adapter_t *pAdapter,
 	 * (those that do not require upper layer authentication) we can put TL
 	 * directly into 'authenticated' state.
 	 */
-	hdd_debug("Set Key completion roamStatus =%d roamResult=%d "
+#ifdef CONFIG_HUAWEI_WIFI
+	hdd_info("Set Key completion roamStatus =%d roamResult=%d "
+		  HW_MAC_ADDRESS_STR, roamStatus, roamResult,
+		  HW_MAC_ADDR_ARRAY(pRoamInfo->peerMac.bytes));
+#else
+	hdd_info("Set Key completion roamStatus =%d roamResult=%d "
 		  MAC_ADDRESS_STR, roamStatus, roamResult,
 		  MAC_ADDR_ARRAY(pRoamInfo->peerMac.bytes));
+#endif
 
 	fConnected = hdd_conn_get_connected_cipher_algo(pHddStaCtx,
 						   &connectedCipherAlgo);
@@ -2953,6 +2966,13 @@ static QDF_STATUS hdd_association_completion_handler(hdd_adapter_t *pAdapter,
 							     roam_info.bssid,
 							     pRoamInfo->bssid.bytes,
 							     QDF_MAC_ADDR_SIZE);
+#ifdef CONFIG_HUAWEI_WIFI
+						if (pRoamInfo) {
+							hdd_err("%s:%d,pRoamInfo is not NULL ", __func__, __LINE__);
+						} else {
+							hdd_err("%s:%d,pRoamInfo is NULL ",__func__, __LINE__);
+						}
+#endif
 						qdf_mem_copy(pHddStaCtx->
 							     roam_info.peerMac,
 							     pRoamInfo->peerMac.bytes,
@@ -3145,22 +3165,25 @@ static QDF_STATUS hdd_association_completion_handler(hdd_adapter_t *pAdapter,
 					 &pWextState->req_bssId);
 
 		if (pRoamInfo)
-			hdd_err("wlan: connection failed with " MAC_ADDRESS_STR
+#ifdef CONFIG_HUAWEI_WIFI
+			hdd_err("wlan: pRoamInfo is not null,connection failed with "
+				HW_MAC_ADDRESS_STR
 				 " result: %d %s and Status: %d %s",
-				 MAC_ADDR_ARRAY(pRoamInfo->bssid.bytes),
+				HW_MAC_ADDR_ARRAY(pRoamInfo->bssid.bytes),
 				 roamResult,
 				 get_e_csr_roam_result_str(roamResult),
 				 roamStatus,
 				 get_e_roam_cmd_status_str(roamStatus));
 		else
-			hdd_err("wlan: connection failed with " MAC_ADDRESS_STR
+			hdd_err("wlan: pRoamInfo is null,connection failed with "
+				MAC_ADDRESS_STR
 				 " result: %d %s and Status: %d %s",
-				 MAC_ADDR_ARRAY(pWextState->req_bssId.bytes),
+				MAC_ADDR_ARRAY(pWextState->req_bssId.bytes),
 				 roamResult,
 				 get_e_csr_roam_result_str(roamResult),
 				 roamStatus,
 				 get_e_roam_cmd_status_str(roamStatus));
-
+#endif
 		if ((eCSR_ROAM_RESULT_SCAN_FOR_SSID_FAILURE == roamResult) ||
 		   (pRoamInfo &&
 		   ((eSIR_SME_JOIN_TIMEOUT_RESULT_CODE ==
@@ -3169,6 +3192,13 @@ static QDF_STATUS hdd_association_completion_handler(hdd_adapter_t *pAdapter,
 					pRoamInfo->statusCode) ||
 		   (eSIR_SME_ASSOC_TIMEOUT_RESULT_CODE ==
 					pRoamInfo->statusCode)))) {
+#ifdef CONFIG_HUAWEI_WIFI
+			if (pRoamInfo) {
+				hdd_err("%s:%d,pRoamInfo is not NULL ",__func__, __LINE__);
+			} else {
+				hdd_err("%s:%d,pRoamInfo is NULL ",__func__, __LINE__);
+			}
+#endif
 			wlan_hdd_cfg80211_update_bss_list(pAdapter,
 				pRoamInfo ?
 				pRoamInfo->bssid.bytes :
@@ -3178,7 +3208,14 @@ static QDF_STATUS hdd_association_completion_handler(hdd_adapter_t *pAdapter,
 				pRoamInfo->bssid.bytes :
 				pWextState->req_bssId.bytes);
 			connect_timeout = true;
+#ifdef CONFIG_HUAWEI_WIFI
+			hdd_err("%s:%d, done",__func__, __LINE__);
+#endif
 		}
+
+#ifdef CONFIG_HUAWEI_WIFI
+		hdd_err("%s:%d,send up a connection failure result",__func__, __LINE__);
+#endif
 
 		/*
 		 * CR465478: Only send up a connection failure result when CSR
@@ -3187,6 +3224,17 @@ static QDF_STATUS hdd_association_completion_handler(hdd_adapter_t *pAdapter,
 		if (eCSR_ROAM_ASSOCIATION_FAILURE == roamStatus
 		    && !hddDisconInProgress) {
 			if (pRoamInfo) {
+#ifdef CONFIG_HUAWEI_WIFI
+				hdd_err("send connect failure to nl80211: for bssid "
+					HW_MAC_ADDRESS_STR
+					" result: %d %s and Status: %d %s reasoncode: %d",
+					HW_MAC_ADDR_ARRAY(pRoamInfo->bssid.bytes),
+					roamResult,
+					get_e_csr_roam_result_str(roamResult),
+					roamStatus,
+					get_e_roam_cmd_status_str(roamStatus),
+					pRoamInfo->reasonCode);
+#else
 				hdd_err("send connect failure to nl80211: for bssid "
 					MAC_ADDRESS_STR
 					" result: %d %s and Status: %d %s reasoncode: %d",
@@ -3196,6 +3244,7 @@ static QDF_STATUS hdd_association_completion_handler(hdd_adapter_t *pAdapter,
 					roamStatus,
 					get_e_roam_cmd_status_str(roamStatus),
 					pRoamInfo->reasonCode);
+#endif
 				pHddStaCtx->conn_info.assoc_status_code =
 					pRoamInfo->statusCode;
 			} else {

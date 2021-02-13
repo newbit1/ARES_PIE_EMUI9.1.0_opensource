@@ -1824,8 +1824,14 @@ void wma_set_bsskey(tp_wma_handle wma_handle, tpSetBssKeyParams key_info)
 		/* vdev mac address will be passed for all other modes */
 		qdf_mem_copy(key_params.peer_mac, mac_addr,
 			     IEEE80211_ADDR_LEN);
+#ifdef CONFIG_HUAWEI_WIFI
+		WMA_LOGA("BSS Key setup with vdev_mac %02x:%02x:**:**:%02x:%02x\n",
+			 *mac_addr,*(mac_addr + 1) ,
+                         *(mac_addr + 4),*(mac_addr + 5));
+#else
 		WMA_LOGA("BSS Key setup with vdev_mac %pM\n",
 			 mac_addr);
+#endif
 	}
 
 	if (key_info->numKeys == 0 &&

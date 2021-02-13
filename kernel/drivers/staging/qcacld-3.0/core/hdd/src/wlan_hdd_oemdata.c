@@ -771,6 +771,23 @@ void hdd_send_peer_status_ind_to_oem_app(struct qdf_mac_addr *peerMac,
 	}
 	skb_put(skb, NLMSG_SPACE((sizeof(tAniMsgHdr) + aniHdr->length)));
 
+#ifdef CONFIG_HUAWEI_WIFI
+	hdd_info("sending peer " HW_MAC_ADDRESS_STR
+		  " status(%d), peerTimingMeasCap(%d), vdevId(%d), chanId(%d)"
+		  " to oem app pid(%d), center freq 1 (%d), center freq 2 (%d),"
+		  " info (0x%x), frequency (%d),reg info 1 (0x%x),"
+		  " reg info 2 (0x%x)",
+		  HW_MAC_ADDR_ARRAY(peerMac->bytes),
+		  peerStatus, peerTimingMeasCap,
+		  sessionId, pPeerInfo->peer_chan_info.chan_id,
+		  p_hdd_ctx->oem_pid,
+		  pPeerInfo->peer_chan_info.band_center_freq1,
+		  pPeerInfo->peer_chan_info.band_center_freq2,
+		  pPeerInfo->peer_chan_info.info,
+		  pPeerInfo->peer_chan_info.mhz,
+		  pPeerInfo->peer_chan_info.reg_info_1,
+		  pPeerInfo->peer_chan_info.reg_info_2);
+#else
 	hdd_info("sending peer " MAC_ADDRESS_STR
 		  " status(%d), peerTimingMeasCap(%d), vdevId(%d), chanId(%d)"
 		  " to oem app pid(%d), center freq 1 (%d), center freq 2 (%d),"
@@ -786,6 +803,7 @@ void hdd_send_peer_status_ind_to_oem_app(struct qdf_mac_addr *peerMac,
 		  pPeerInfo->peer_chan_info.mhz,
 		  pPeerInfo->peer_chan_info.reg_info_1,
 		  pPeerInfo->peer_chan_info.reg_info_2);
+#endif
 
 	(void)nl_srv_ucast_oem(skb, p_hdd_ctx->oem_pid, MSG_DONTWAIT);
 }

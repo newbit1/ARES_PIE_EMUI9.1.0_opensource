@@ -2137,8 +2137,13 @@ QDF_STATUS hdd_hostapd_sap_event_cb(tpSap_Event pSapEvent,
 		wrqu.addr.sa_family = ARPHRD_ETHER;
 		memcpy(wrqu.addr.sa_data,
 		       &event->staMac, QDF_MAC_ADDR_SIZE);
+#ifdef CONFIG_HUAWEI_WIFI
+		hdd_notice(" associated " HW_MAC_ADDRESS_STR,
+		       HW_MAC_ADDR_ARRAY(wrqu.addr.sa_data));
+#else
 		hdd_notice(" associated " MAC_ADDRESS_STR,
 		       MAC_ADDR_ARRAY(wrqu.addr.sa_data));
+#endif
 		we_event = IWEVREGISTERED;
 
 		wlansap_get_wps_state(
@@ -2300,8 +2305,13 @@ QDF_STATUS hdd_hostapd_sap_event_cb(tpSap_Event pSapEvent,
 			cache_stainfo->reason_code = disassoc_comp->reason_code;
 			cache_stainfo->disassoc_ts = qdf_system_ticks();
 		}
+#ifdef CONFIG_HUAWEI_WIFI
+		hdd_notice(" disassociated " HW_MAC_ADDRESS_STR,
+		       HW_MAC_ADDR_ARRAY(wrqu.addr.sa_data));
+#else
 		hdd_notice(" disassociated " MAC_ADDRESS_STR,
 				MAC_ADDR_ARRAY(wrqu.addr.sa_data));
+#endif
 
 		qdf_status = qdf_event_set(&pHostapdState->qdf_sta_disassoc_event);
 		if (!QDF_IS_STATUS_SUCCESS(qdf_status))

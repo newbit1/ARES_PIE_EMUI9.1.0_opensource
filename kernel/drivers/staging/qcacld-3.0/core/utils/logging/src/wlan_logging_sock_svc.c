@@ -43,11 +43,17 @@
 
 #define MAX_NUM_PKT_LOG 32
 
+#ifdef CONFIG_HUAWEI_WIFI
+#define ALLOWED_LOG_LEVELS_TO_CONSOLE(level) \
+	((QDF_TRACE_LEVEL_FATAL == (level)) || \
+	 (QDF_TRACE_LEVEL_ERROR == (level)))
+#else
 #define ALLOWED_LOG_LEVELS_TO_CONSOLE(level) \
 	((QDF_TRACE_LEVEL_FATAL == (level)) || \
 	 (QDF_TRACE_LEVEL_ERROR == (level)) || \
 	 (QDF_TRACE_LEVEL_WARN == (level)) || \
 	 (QDF_TRACE_LEVEL_INFO == (level)))
+#endif
 
 /**
  * struct tx_status - tx status

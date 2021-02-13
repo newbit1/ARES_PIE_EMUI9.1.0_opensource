@@ -1,3 +1,10 @@
+ifeq ($(CONFIG_HUAWEI_ANDROID_WIFI_BUILTIN),true)
+#ifeq ($(PRODUCT_VENDOR_MOVE_ENABLED),true)
+#$(shell ln -sf /persist/wlan_mac.bin $(TARGET_OUT_VENDOR)/firmware/wlan/qca_cld/wlan_mac.bin)
+#else
+#$(shell ln -sf /persist/wlan_mac.bin $(TARGET_OUT_ETC)/firmware/wlan/qca_cld/wlan_mac.bin)
+#endif
+else
 # Android makefile for the WLAN Module
 
 # Assume no targets will be supported
@@ -77,12 +84,13 @@ $(shell mkdir -p $(TARGET_OUT)/lib/modules; \
 endif
 endif
 
-ifeq ($(PRODUCT_VENDOR_MOVE_ENABLED),true)
-$(shell ln -sf /persist/wlan_mac.bin $(TARGET_OUT_VENDOR)/firmware/wlan/qca_cld/wlan_mac.bin)
-else
-$(shell ln -sf /persist/wlan_mac.bin $(TARGET_OUT_ETC)/firmware/wlan/qca_cld/wlan_mac.bin)
-endif
+#ifeq ($(PRODUCT_VENDOR_MOVE_ENABLED),true)
+#$(shell ln -sf /persist/wlan_mac.bin $(TARGET_OUT_VENDOR)/firmware/wlan/qca_cld/wlan_mac.bin)
+#else
+#$(shell ln -sf /persist/wlan_mac.bin $(TARGET_OUT_ETC)/firmware/wlan/qca_cld/wlan_mac.bin)
+#endif
 
 endif # DLKM check
 endif # supported target check
 endif # WLAN enabled check
+endif # CONFIG_HUAWEI_ANDROID_WIFI_BUILTIN

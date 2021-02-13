@@ -1374,7 +1374,12 @@ void csr_remove_bssid_from_scan_list(tpAniSirGlobal mac_ctx,
 			entry = csr_ll_next(list, entry, LL_ACCESS_NOLOCK);
 			csr_ll_remove_entry(list, free_elem, LL_ACCESS_NOLOCK);
 			csr_free_scan_result_entry(mac_ctx, bss_desc);
+#ifdef CONFIG_HUAWEI_WIFI
+			sme_warn("Removed BSS entry:%02x:%02x:**:**:%02x,%02x",
+                        *bssid, *(bssid + 1), *(bssid + 4), *(bssid + 5));
+#else
 			sme_warn("Removed BSS entry:%pM", bssid);
+#endif
 			continue;
 		}
 

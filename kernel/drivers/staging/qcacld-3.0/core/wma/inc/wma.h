@@ -525,6 +525,13 @@ enum ds_mode {
 #define WMA_SCAN_END_EVENT	(WMI_SCAN_EVENT_COMPLETED |	\
 				WMI_SCAN_EVENT_DEQUEUED   |	\
 				WMI_SCAN_EVENT_START_FAILED)
+
+#ifdef CONFIG_HUAWEI_WIFI
+#define HW_MAC_ADDR_ARRAY(a) (a)[0], (a)[1], (a)[4], (a)[5]
+/** Mac Address string **/
+#define HW_MAC_ADDRESS_STR "%02x:%02x:**:**:%02x:%02x"
+#endif
+
 /*
  * PROBE_REQ_TX_DELAY
  * param to specify probe request Tx delay for scans triggered on this VDEV

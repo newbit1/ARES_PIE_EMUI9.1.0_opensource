@@ -848,6 +848,10 @@ static inline bool hdd_is_tx_allowed(struct sk_buff *skb, uint8_t peer_id)
 
 	return false;
 }
+#ifdef CONFIG_HUAWEI_WIFI
+ #define PKTMARK(p)                     (((struct sk_buff *)(p))->mark)
+ #define WZRY_DPI_MARK_NUM   0x5a
+#endif
 
 /**
  * __hdd_hard_start_xmit() - Transmit a frame
@@ -1017,6 +1021,11 @@ static netdev_tx_t __hdd_hard_start_xmit(struct sk_buff *skb,
 		skb->queue_mapping = hdd_linux_up_to_ac_map[up];
 	}
 
+#ifdef CONFIG_HUAWEI_WIFI
+   if (PKTMARK(skb) == WZRY_DPI_MARK_NUM){
+       skb->priority = SME_QOS_WMM_UP_VO;
+  }
+#endif
 	pAdapter->stats.tx_bytes += skb->len;
 
 	wlan_hdd_tdls_update_tx_pkt_cnt(pAdapter, skb);

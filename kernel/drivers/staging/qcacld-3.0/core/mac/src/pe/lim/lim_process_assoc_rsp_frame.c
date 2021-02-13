@@ -1032,11 +1032,19 @@ assocReject:
 		|| ((subtype == LIM_REASSOC)
 		&& (session_entry->limMlmState ==
 		    eLIM_MLM_WT_FT_REASSOC_RSP_STATE))) {
+#ifdef CONFIG_HUAWEI_WIFI
+		pe_err("Assoc Rejected by the peer mlmestate: %d sessionid: %d Reason: %d MACADDR:"
+			HW_MAC_ADDRESS_STR,
+			session_entry->limMlmState,
+			session_entry->peSessionId,
+			assoc_cnf.resultCode, HW_MAC_ADDR_ARRAY(hdr->sa));
+#else
 		pe_err("Assoc Rejected by the peer mlmestate: %d sessionid: %d Reason: %d MACADDR:"
 			MAC_ADDRESS_STR,
 			session_entry->limMlmState,
 			session_entry->peSessionId,
 			assoc_cnf.resultCode, MAC_ADDR_ARRAY(hdr->sa));
+#endif
 		session_entry->limMlmState = eLIM_MLM_IDLE_STATE;
 		MTRACE(mac_trace(mac_ctx, TRACE_CODE_MLM_STATE,
 			session_entry->peSessionId,

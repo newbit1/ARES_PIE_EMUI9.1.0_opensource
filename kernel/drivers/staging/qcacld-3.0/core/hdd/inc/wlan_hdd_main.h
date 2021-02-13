@@ -340,6 +340,10 @@ static inline bool in_compat_syscall(void) { return is_compat_task(); }
 /* Assigned size of driver memory dump is 4096 bytes */
 #define DRIVER_MEM_DUMP_SIZE    4096
 
+#ifdef CONFIG_HUAWEI_WIFI
+#define HW_MAC_ADDR_ARRAY(a) (a)[0], (a)[1], (a)[4], (a)[5]
+#define HW_MAC_ADDRESS_STR "%02x:%02x:**:**:%02x:%02x"
+#endif
 /*
  * @eHDD_DRV_OP_PROBE: Refers to .probe operation
  * @eHDD_DRV_OP_REMOVE: Refers to .remove operation
@@ -369,6 +373,16 @@ typedef enum {
 	eHDD_EAPOL_IN_PROGRESS,
 	eHDD_SAP_EAPOL_IN_PROGRESS,
 } scan_reject_states;
+#ifdef CONFIG_HUAWEI_WIFI_BUILTIN
+typedef enum {
+    WLAN_DRIVER_UNKNOWN = 0,
+    WLAN_DRIVER_LOADED,
+    WLAN_DRIVER_UNLOADED,
+    WLAN_DRIVER_LOADING,
+    WLAN_DRIVER_UNLOADING,
+    WLAN_DRIVER_FAILED,
+}wlan_driver_status;
+#endif
 
 #define MAX_PROBE_REQ_OUIS 16
 

@@ -5853,9 +5853,15 @@ static void lim_process_update_add_ies(tpAniSirGlobal mac_ctx,
 			update_ie->bssid.bytes, &session_id);
 
 	if (NULL == session_entry) {
+#ifdef CONFIG_HUAWEI_WIFI
+		pe_err("Session not found for given bssid"
+				       HW_MAC_ADDRESS_STR,
+			HW_MAC_ADDR_ARRAY(update_ie->bssid.bytes));
+#else
 		pe_err("Session not found for given bssid"
 				       MAC_ADDRESS_STR,
 			MAC_ADDR_ARRAY(update_ie->bssid.bytes));
+#endif
 		goto end;
 	}
 	addn_ie = &session_entry->addIeParams;

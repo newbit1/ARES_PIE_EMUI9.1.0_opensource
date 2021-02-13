@@ -51,6 +51,10 @@
 
 #define SSR_MAX_FAIL_CNT 3
 static uint8_t re_init_fail_cnt, probe_fail_cnt;
+#ifdef CONFIG_HUAWEI_DSM
+#include "hw_dsm_notify.h"
+#define DSM_WIFI_SSR_ERROR    (909030007)
+#endif
 
 /*
  * In BMI Phase we are only sending small chunk (256 bytes) of the FW image at
@@ -359,7 +363,7 @@ static int wlan_hdd_probe(struct device *dev, void *bdev, const struct hif_bus_i
 	enum qdf_bus_type bus_type, bool reinit)
 {
 	int ret = 0;
-
+    pr_info("%s: wlan_hdd_probe\n", WLAN_MODULE_NAME);
 	mutex_lock(&hdd_init_deinit_lock);
 	cds_set_driver_in_bad_state(false);
 	if (!reinit)
@@ -432,7 +436,9 @@ err_hdd_deinit:
 	if (probe_fail_cnt >= SSR_MAX_FAIL_CNT ||
 	    re_init_fail_cnt >= SSR_MAX_FAIL_CNT)
 		QDF_BUG(0);
-
+#ifdef CONFIG_HUAWEI_DSM
+		wifi_dsm_report_info(DSM_WIFI_SSR_ERROR, "wlan SSR");
+#endif
 	cds_set_recovery_in_progress(false);
 	if (reinit)
 		cds_set_driver_in_bad_state(true);
@@ -856,7 +862,11 @@ static int __wlan_hdd_bus_resume(void)
 	if (cds_is_driver_recovering())
 		return 0;
 
-	hdd_info("starting bus resume");
+#ifdef CONFIG_HUAWEI_WIFI
+	hdd_err("starting bus resume");
+#else
+	hdd_debug("starting bus resume");
+#endif
 
 	status = wlan_hdd_validate_context(hdd_ctx);
 	if (status) {
@@ -905,7 +915,11 @@ static int __wlan_hdd_bus_resume(void)
 		goto out;
 	}
 
-	hdd_info("bus resume succeeded");
+#ifdef CONFIG_HUAWEI_WIFI
+	hdd_err("bus resume succeeded");
+#else
+	hdd_debug("bus resume succeeded");
+#endif
 	return 0;
 
 out:
@@ -1149,7 +1163,7 @@ static int wlan_hdd_pld_probe(struct device *dev,
 		   void *bdev, void *id)
 {
 	enum qdf_bus_type bus_type;
-
+    pr_info("wlan:wlan_hdd_pld_probe\n");
 	bus_type = to_bus_type(pld_bus_type);
 	if (bus_type == QDF_BUS_TYPE_NONE) {
 		hdd_err("Invalid bus type %d->%d",

@@ -6853,10 +6853,15 @@ static int __hdd_ipa_wlan_evt(hdd_adapter_t *adapter, uint8_t sta_id,
 			    adapter);
 		return -EINVAL;
 	}
-
-	HDD_IPA_LOG(QDF_TRACE_LEVEL_INFO, "%s: EVT: %s, MAC: %pM sta_id: %d",
+#ifdef CONFIG_HUAWEI_WIFI
+	HDD_IPA_LOG(QDF_TRACE_LEVEL_FATAL, "%s: %s evt, MAC: %02x:%02x:**:**:%02x:%02x sta_id: %d",
+		    adapter->dev->name, hdd_ipa_wlan_event_to_str(type),
+		    *mac_addr,*(mac_addr+1),*(mac_addr+4),*(mac_addr+5), sta_id);
+#else
+	HDD_IPA_LOG(QDF_TRACE_LEVEL_FATAL, "%s: %s evt, MAC: %pM sta_id: %d",
 		    adapter->dev->name, hdd_ipa_wlan_event_to_str(type),
 		    mac_addr, sta_id);
+#endif
 
 	if (type >= IPA_WLAN_EVENT_MAX)
 		return -EINVAL;

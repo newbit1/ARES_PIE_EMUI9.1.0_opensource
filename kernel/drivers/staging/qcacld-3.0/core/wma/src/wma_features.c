@@ -4219,8 +4219,13 @@ wma_wow_get_pkt_proto_subtype(uint8_t *data,
 	uint16_t ether_type = (uint16_t)(*(uint16_t *)(data +
 				QDF_NBUF_TRAC_ETH_TYPE_OFFSET));
 
+#ifdef CONFIG_HUAWEI_WIFI
+	WMA_LOGE("Ether Type: 0x%04x",
+		ani_cpu_to_be16(ether_type));
+#else
 	WMA_LOGD("Ether Type: 0x%04x",
 		ani_cpu_to_be16(ether_type));
+#endif
 
 	if (QDF_NBUF_TRAC_EAPOL_ETH_TYPE ==
 		   ani_cpu_to_be16(ether_type)) {
@@ -4241,7 +4246,11 @@ wma_wow_get_pkt_proto_subtype(uint8_t *data,
 		if (len < WMA_IPV4_PROTO_GET_MIN_LEN)
 			return QDF_PROTO_INVALID;
 		proto_type = qdf_nbuf_data_get_ipv4_proto(data);
+#ifdef CONFIG_HUAWEI_WIFI
+		WMA_LOGE("IPV4_proto_type: %u", proto_type);
+#else
 		WMA_LOGD("IPV4_proto_type: %u", proto_type);
+#endif
 		if (proto_type == QDF_NBUF_TRAC_ICMP_TYPE) {
 			if (len >= WMA_ICMP_SUBTYPE_GET_MIN_LEN)
 				return qdf_nbuf_data_get_icmp_subtype(
@@ -4309,12 +4318,21 @@ static void wma_wow_parse_data_pkt_buffer(uint8_t *data,
 	uint16_t src_port, dst_port;
 	uint32_t transaction_id, tcp_seq_num;
 	char *ip_addr;
-
+#ifdef CONFIG_HUAWEI_WIFI
+	WMA_LOGE("wow_buf_pkt_len: %u", buf_len);
+#else
 	WMA_LOGD("wow_buf_pkt_len: %u", buf_len);
+#endif
 	if (buf_len >= QDF_NBUF_TRAC_IPV4_OFFSET)
-		WMA_LOGI("Src_mac: "MAC_ADDRESS_STR" Dst_mac: "MAC_ADDRESS_STR,
+#ifdef CONFIG_HUAWEI_WIFI
+		WMA_LOGE("Src_mac: "HW_MAC_ADDRESS_STR" Dst_mac: "HW_MAC_ADDRESS_STR,
+			HW_MAC_ADDR_ARRAY(data + QDF_NBUF_SRC_MAC_OFFSET),
+			HW_MAC_ADDR_ARRAY(data + QDF_NBUF_DEST_MAC_OFFSET));
+#else
+		WMA_LOGD("Src_mac: "MAC_ADDRESS_STR" Dst_mac: "MAC_ADDRESS_STR,
 			MAC_ADDR_ARRAY(data + QDF_NBUF_SRC_MAC_OFFSET),
 			MAC_ADDR_ARRAY(data + QDF_NBUF_DEST_MAC_OFFSET));
+#endif
 	else
 		goto end;
 
@@ -4400,31 +4418,55 @@ static void wma_wow_parse_data_pkt_buffer(uint8_t *data,
 
 	case QDF_PROTO_IPV4_UDP:
 	case QDF_PROTO_IPV4_TCP:
-		WMA_LOGI("WOW Wakeup: %s rcvd",
+#ifdef CONFIG_HUAWEI_WIFI
+		WMA_LOGE("WOW Wakeup: %s rcvd",
 			wma_pkt_proto_subtype_to_string(proto_subtype));
+#else
+		WMA_LOGD("WOW Wakeup: %s rcvd",
+			wma_pkt_proto_subtype_to_string(proto_subtype));
+#endif
 		if (buf_len >= WMA_IPV4_PKT_INFO_GET_MIN_LEN) {
 			pkt_len = (uint16_t)(*(uint16_t *)(data +
 				IPV4_PKT_LEN_OFFSET));
 			ip_addr = (char *)(data + IPV4_SRC_ADDR_OFFSET);
+#ifdef CONFIG_HUAWEI_WIFI
+			WMA_LOGE("src addr %d:**:**:%d", ip_addr[0], ip_addr[3]);
+			ip_addr = (char *)(data + IPV4_DST_ADDR_OFFSET);
+			WMA_LOGE("dst addr %d:**:**:%d", ip_addr[0], ip_addr[3]);
+#else
 			WMA_LOGD("src addr %d:%d:%d:%d", ip_addr[0], ip_addr[1],
 				ip_addr[2], ip_addr[3]);
 			ip_addr = (char *)(data + IPV4_DST_ADDR_OFFSET);
 			WMA_LOGD("dst addr %d:%d:%d:%d", ip_addr[0], ip_addr[1],
 				ip_addr[2], ip_addr[3]);
+#endif
 			src_port = (uint16_t)(*(uint16_t *)(data +
 				IPV4_SRC_PORT_OFFSET));
 			dst_port = (uint16_t)(*(uint16_t *)(data +
 				IPV4_DST_PORT_OFFSET));
+#ifdef CONFIG_HUAWEI_WIFI
+			WMA_LOGE("Pkt_len: %u",
+				ani_cpu_to_be16(pkt_len));
+			WMA_LOGE("src_port: %u, dst_port: %u",
+				ani_cpu_to_be16(src_port),
+				ani_cpu_to_be16(dst_port));
+#else
 			WMA_LOGD("Pkt_len: %u",
 				ani_cpu_to_be16(pkt_len));
 			WMA_LOGI("src_port: %u, dst_port: %u",
 				ani_cpu_to_be16(src_port),
 				ani_cpu_to_be16(dst_port));
+#endif
 			if (proto_subtype == QDF_PROTO_IPV4_TCP) {
 				tcp_seq_num = (uint32_t)(*(uint32_t *)(data +
 					IPV4_TCP_SEQ_NUM_OFFSET));
+#ifdef CONFIG_HUAWEI_WIFI
+				WMA_LOGE("TCP_seq_num: %u",
+					ani_cpu_to_be16(tcp_seq_num));
+#else
 				WMA_LOGD("TCP_seq_num: %u",
 					ani_cpu_to_be16(tcp_seq_num));
+#endif
 			}
 		}
 		break;
@@ -4775,11 +4817,19 @@ int wma_wow_wakeup_host_event(void *handle, uint8_t *event,
 			return -EINVAL;
 		}
 		wma_vdev = &wma->interfaces[wake_info->vdev_id];
+#ifdef CONFIG_HUAWEI_WIFI
+		WMA_LOGE("WLAN triggered wakeup: %s (%d), vdev: %d (%s)",
+			 wma_wow_wake_reason_str(wake_info->wake_reason),
+			 wake_info->wake_reason,
+			 wake_info->vdev_id,
+			 wma_vdev_type_str(wma_vdev->type));
+#else
 		WMA_LOGA("WLAN triggered wakeup: %s (%d), vdev: %d (%s)",
 			 wma_wow_wake_reason_str(wake_info->wake_reason),
 			 wake_info->wake_reason,
 			 wake_info->vdev_id,
 			 wma_vdev_type_str(wma_vdev->type));
+#endif
 		qdf_wow_wakeup_host_event(wake_info->wake_reason);
 		qdf_wma_wow_wakeup_stats_event();
 	} else if (!wmi_get_runtime_pm_inprogress(wma->wmi_handle)) {
@@ -4925,8 +4975,11 @@ int wma_wow_wakeup_host_event(void *handle, uint8_t *event,
 		}
 
 		wow_buf_data = (uint8_t *)(param_buf->wow_packet_buffer + 4);
+#ifdef CONFIG_HUAWEI_WIFI
+#else
 		qdf_trace_hex_dump(QDF_MODULE_ID_WMA, QDF_TRACE_LEVEL_DEBUG,
 				   wow_buf_data, wow_buf_pkt_len);
+#endif
 		wma_wow_parse_data_pkt_buffer(wow_buf_data, wow_buf_pkt_len);
 
 		break;
@@ -6505,7 +6558,11 @@ static QDF_STATUS wma_send_host_wakeup_ind_to_fw(tp_wma_handle wma)
 	if (ret)
 		return QDF_STATUS_E_FAILURE;
 
+#ifdef CONFIG_HUAWEI_WIFI
+	WMA_LOGE("Host wakeup indication sent to fw");
+#else
 	WMA_LOGD("Host wakeup indication sent to fw");
+#endif
 
 	qdf_status = qdf_wait_for_event_completion(&(wma->wma_resume_event),
 					   WMA_RESUME_TIMEOUT);
@@ -6626,7 +6683,11 @@ bool wma_is_wow_mode_selected(WMA_HANDLE handle)
 {
 	tp_wma_handle wma = (tp_wma_handle) handle;
 
+#ifdef CONFIG_HUAWEI_WIFI
+	WMA_LOGE("WoW enable %d", wma->wow.wow_enable);
+#else
 	WMA_LOGD("WoW enable %d", wma->wow.wow_enable);
+#endif
 	return wma->wow.wow_enable;
 }
 
@@ -8670,7 +8731,11 @@ static int __wma_bus_resume(WMA_HANDLE handle)
 	}
 
 	wow_mode = wma_is_wow_mode_selected(handle);
+#ifdef CONFIG_HUAWEI_WIFI
+	WMA_LOGE("%s: wow mode %d", __func__, wow_mode);
+#else
 	WMA_LOGD("%s: wow mode %d", __func__, wow_mode);
+#endif
 
 	wma_peer_debug_log(DEBUG_INVALID_VDEV_ID, DEBUG_BUS_RESUME,
 			   DEBUG_INVALID_PEER_ID, NULL, NULL,

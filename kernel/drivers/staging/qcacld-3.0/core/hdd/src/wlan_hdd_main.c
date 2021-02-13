@@ -109,11 +109,18 @@
 #ifdef WLAN_FEATURE_APF
 #include "wlan_hdd_apf.h"
 #endif
+#ifdef CONFIG_HUAWEI_WIFI_BUILTIN
+#include <linux/proc_fs.h>
+#endif
 
 #ifdef CNSS_GENL
 #include <net/cnss_nl.h>
 #endif
 
+#ifdef CONFIG_HUAWEI_DSM
+#include "hw_dsm_notify.h"
+int refcntErrorTimes = 0;
+#endif
 #ifdef MODULE
 #define WLAN_MODULE_NAME  module_name(THIS_MODULE)
 #else
@@ -132,6 +139,15 @@
 #define MEMORY_DEBUG_STR ""
 #endif
 
+/*
+for (iter = start_idx; iter < QDF_MAX_CONCURRENCY_PERSONA; ++iter)
+iter 0:wlan0 addr
+iter 1:p2p0 addr
+iter 2:p2p-p2p0 addr
+*/
+#ifdef CONFIG_HUAWEI_WIFI
+#define P2P_INTERFACE_INDEX    1
+#endif
 #ifdef PANIC_ON_BUG
 #define PANIC_ON_BUG_STR " +PANIC_ON_BUG"
 #else
@@ -139,13 +155,18 @@
 #endif
 
 bool g_is_system_reboot_triggered;
+#ifdef CONFIG_HUAWEI_WIFI_BUILTIN
+static int wlan_start_ret_val = WLAN_DRIVER_UNKNOWN;
+#else
 int wlan_start_ret_val;
+#endif
 static DECLARE_COMPLETION(wlan_start_comp);
 static unsigned int dev_num = 1;
 static struct cdev wlan_hdd_state_cdev;
 static struct class *class;
 static dev_t device;
-#ifndef MODULE
+//#ifndef MODULE
+#ifdef CONFIG_HUAWEI_WIFI_BUILTIN
 static struct gwlan_loader *wlan_loader;
 static ssize_t wlan_boot_cb(struct kobject *kobj,
 			    struct kobj_attribute *attr,
@@ -170,6 +191,29 @@ static struct attribute *attrs[] = {
 #define HDD_OPS_INACTIVITY_TIMEOUT (120000)
 #define MAX_OPS_NAME_STRING_SIZE 20
 #define RATE_LIMIT_ERROR_LOG (256)
+
+#ifdef CONFIG_HUAWEI_WIFI_BUILTIN
+#define MODULE_UN_INITIALIZED 0
+
+struct mutex wifi_enable_write_mutex;
+#define WIFI_BUILT_IN_PROC_DIR "wifi_built_in"
+#define WIFI_START_PROC_FILE   "wifi_start"
+#define WIFI_STATUS_PROC_FILE   "wifi_status"
+#define WIFI_MAC_ADDR_HW_PROC_FILE  "mac_addr_hw"
+#define WIFI_DEBUG_LEVEL_HW_PROC_FILE  "debug_level_hw"
+#define MAX_USER_COMMAND_HW_SIZE 64
+#define CMD_START_DRIVER_HW "start"
+#define CMD_STOP_DRIVER_HW "stop"
+#define CMD_FTM_HW "ftm"
+
+#define MAC_ADDRESS_MAX_LEN 20
+#define MAC_CMD_LENGTH 6
+static char mac_address[MAC_ADDRESS_MAX_LEN] = {0};
+
+extern int cnss_utils_set_wlan_mac_address(const u8 *in, const uint32_t len);
+
+int __init hw_buildin_module_init ( void);
+#endif
 
 static qdf_timer_t hdd_drv_ops_inactivity_timer;
 static struct task_struct *hdd_drv_ops_task;
@@ -198,6 +242,7 @@ DEFINE_MUTEX(hdd_init_deinit_lock);
 #define WLAN_NLINK_CESIUM 30
 
 static qdf_wake_lock_t wlan_wake_lock;
+static const int WLAN_INIT_TIMEOUT_DELAY = 100;
 
 #define WOW_MAX_FILTER_LISTS 1
 #define WOW_MAX_FILTERS_PER_LIST 4
@@ -240,8 +285,14 @@ static void wlan_hdd_auto_shutdown_cb(void);
 
 void hdd_start_complete(int ret)
 {
+#ifdef CONFIG_HUAWEI_WIFI_BUILTIN
+        if(0 == ret)
+            wlan_start_ret_val = WLAN_DRIVER_LOADED;
+        else
+            wlan_start_ret_val = WLAN_DRIVER_FAILED;
+#else
 	wlan_start_ret_val = ret;
-
+#endif
 	complete(&wlan_start_comp);
 }
 
@@ -6853,6 +6904,9 @@ static void hdd_wlan_exit(hdd_context_t *hdd_ctx)
 	hdd_exit_netlink_services(hdd_ctx);
 	mutex_destroy(&hdd_ctx->iface_change_lock);
 	hdd_context_destroy(hdd_ctx);
+#ifdef CONFIG_HUAWEI_DSM
+	refcntErrorTimes = 0;
+#endif
 }
 
 void __hdd_wlan_exit(void)
@@ -8942,7 +8996,7 @@ static hdd_context_t *hdd_context_create(struct device *dev)
 	v_CONTEXT_t p_cds_context;
 
 	ENTER();
-
+    pr_err("%s: hdd_context_create\n", WLAN_MODULE_NAME);
 	p_cds_context = cds_get_global_context();
 	if (p_cds_context == NULL) {
 		hdd_err("Failed to get CDS global context");
@@ -9888,7 +9942,9 @@ void hdd_populate_random_mac_addr(hdd_context_t *hdd_ctx, uint32_t num)
 		macaddr_b3 += tmp_br3;
 		macaddr_b3 ^= (1 << INTF_MACADDR_MASK);
 		buf[0] |= 0x02;
+#ifndef CONFIG_HUAWEI_WIFI
 		buf[3] = macaddr_b3;
+#endif
 		hdd_debug(MAC_ADDRESS_STR, MAC_ADDR_ARRAY(buf));
 		hdd_ctx->num_derived_addr++;
 	}
@@ -11277,7 +11333,7 @@ int hdd_wlan_startup(struct device *dev)
 	bool rtnl_held;
 
 	ENTER();
-
+    pr_info("%s: hdd_wlan_startup\n", WLAN_MODULE_NAME);
 	hdd_ctx = hdd_context_create(dev);
 
 	if (IS_ERR(hdd_ctx))
@@ -12617,6 +12673,9 @@ static int __hdd_module_init(void)
 	       WLAN_MODULE_NAME,
 	       g_wlan_driver_version,
 	       TIMER_MANAGER_STR MEMORY_DEBUG_STR PANIC_ON_BUG_STR);
+#ifdef CONFIG_HUAWEI_WIFI_BUILTIN
+        wlan_start_ret_val = WLAN_DRIVER_LOADING;
+#endif
 
 	pld_init();
 
@@ -12627,9 +12686,10 @@ static int __hdd_module_init(void)
 	}
 
 	qdf_wake_lock_create(&wlan_wake_lock, "wlan");
-
+#ifndef CONFIG_HUAWEI_WIFI_BUILTIN
 	hdd_set_conparam((uint32_t) con_mode);
-
+#endif
+	pr_info("%s: will enter wlan_hdd_register_driver\n", WLAN_MODULE_NAME);
 	ret = wlan_hdd_register_driver();
 	if (ret) {
 		pr_err("%s: driver load failure, err %d\n", WLAN_MODULE_NAME,
@@ -12642,7 +12702,9 @@ static int __hdd_module_init(void)
 		pr_err("wlan_hdd_state_create:%x\n", ret);
 		goto out;
 	}
-
+#ifdef CONFIG_HUAWEI_WIFI_BUILTIN
+        wlan_start_ret_val = WLAN_DRIVER_LOADED;
+#endif
 	pr_info("%s: driver loaded\n", WLAN_MODULE_NAME);
 
 	return 0;
@@ -12651,6 +12713,10 @@ out:
 	hdd_deinit();
 err_hdd_init:
 	pld_deinit();
+#ifdef CONFIG_HUAWEI_WIFI_BUILTIN
+        wlan_start_ret_val = WLAN_DRIVER_FAILED;
+        pr_err("%s: %s : wlan_start_ret_val: %d ;\n", WLAN_MODULE_NAME, __func__,wlan_start_ret_val);
+#endif
 	return ret;
 }
 
@@ -12666,7 +12732,9 @@ static void __hdd_module_exit(void)
 
 	pr_info("%s: Unloading driver v%s\n", WLAN_MODULE_NAME,
 		QWLAN_VERSIONSTR);
-
+#ifdef CONFIG_HUAWEI_WIFI_BUILTIN
+        wlan_start_ret_val=WLAN_DRIVER_UNLOADING;
+#endif
 	if (!hdd_wait_for_recovery_completion())
 		return;
 
@@ -12682,9 +12750,15 @@ static void __hdd_module_exit(void)
 	pld_deinit();
 
 	wlan_hdd_state_ctrl_param_destroy();
+#ifdef CONFIG_HUAWEI_WIFI_BUILTIN
+        wlan_start_ret_val = WLAN_DRIVER_UNLOADED;
+        wlan_loader->loaded_state = MODULE_UN_INITIALIZED;
+        pr_info("%s: driver unloaded\n", WLAN_MODULE_NAME);
+#endif
 }
 
-#ifndef MODULE
+//#ifndef MODULE
+#ifdef CONFIG_HUAWEI_WIFI_BUILTIN
 /**
  * wlan_boot_cb() - Wlan boot callback
  * @kobj:      object whose directory we're creating the link in.
@@ -12769,7 +12843,11 @@ static int wlan_init_sysfs(void)
 	if (!wlan_loader->attr_group)
 		goto error_return;
 
+#ifdef CONFIG_HUAWEI_WIFI_BUILTIN
+	wlan_loader->loaded_state = MODULE_UN_INITIALIZED;
+#else
 	wlan_loader->loaded_state = 0;
+#endif
 	wlan_loader->attr_group->attrs = attrs;
 
 	wlan_loader->boot_wlan_obj = kobject_create_and_add("boot_wlan",
@@ -12812,7 +12890,8 @@ static int wlan_deinit_sysfs(void)
 
 #endif /* MODULE */
 
-#ifdef MODULE
+//#ifdef MODULE
+#ifndef CONFIG_HUAWEI_WIFI_BUILTIN
 /**
  * __hdd_module_init - Module init helper
  *
@@ -12822,6 +12901,9 @@ static int wlan_deinit_sysfs(void)
  */
 static int hdd_module_init(void)
 {
+#ifndef CONFIG_HUAWEI_WIFI_BUILTIN
+    pr_err("enter build ko");
+#endif
 	if (__hdd_module_init()) {
 		pr_err("%s: Failed to register handler\n", __func__);
 		return -EINVAL;
@@ -12833,17 +12915,253 @@ static int hdd_module_init(void)
 static int __init hdd_module_init(void)
 {
 	int ret = -EINVAL;
+#ifdef CONFIG_HUAWEI_WIFI_BUILTIN
+    pr_err("enter build in");
+#endif
 
 	ret = wlan_init_sysfs();
 	if (ret)
 		pr_err("Failed to create sysfs entry for loading wlan");
-
+#ifdef CONFIG_HUAWEI_WIFI_BUILTIN
+	ret = hw_buildin_module_init();
+#endif
 	return ret;
 }
 #endif
 
+#ifdef CONFIG_HUAWEI_WIFI_BUILTIN
+static ssize_t wlan_boot_start(void)
+{
+    pr_err("%s: enter wlan_boot_start", WLAN_MODULE_NAME);
+	if (wlan_loader->loaded_state) {
+		pr_err("%s: driver already loaded\n", WLAN_MODULE_NAME);
+		return 0;
+	}
+	init_completion(&wlan_start_comp);
+	hdd_set_conparam(QDF_GLOBAL_MISSION_MODE);
+	if (__hdd_module_init()) {
+		pr_err("%s: wlan driver initialization failed\n", __func__);
+		return -EIO;
+	}
+    pr_err("%s: exit wlan_boot_start", WLAN_MODULE_NAME);
+	wlan_loader->loaded_state = MODULE_INITIALIZED;
 
-#ifdef MODULE
+	return 0;
+}
+
+
+/*
+  Function:       wifi_driver_control_write
+  Description:    wifi driver load or unload control function
+  Calls:          write the /proc/wifi_enable/wifi_start file
+  Input:
+    filp:  which file be writerrn
+    buf:  what be wrttern to filp
+    count: the len of content in buf
+    off:  off length
+  Return:        the length been writern to the file
+*/
+static ssize_t wifi_driver_control_write(struct file *filp, const char __user *buf, size_t count, loff_t *off)
+{
+    char cmd[MAX_USER_COMMAND_HW_SIZE + 1] = {0};
+    int ret_status;
+    pr_err("%s: wifi_driver_control_write enter", WLAN_MODULE_NAME);
+    if (count > MAX_USER_COMMAND_HW_SIZE)
+    {
+        pr_err("%s: Command length %d is larger than %d bytes. ", WLAN_MODULE_NAME, (int)count,MAX_USER_COMMAND_HW_SIZE);
+        return -EINVAL;
+    }
+
+    /* Get command from user */
+    if (copy_from_user(cmd, buf, count)) {
+        pr_err("%s: copy_from_user error.",WLAN_MODULE_NAME);
+        return -EFAULT;
+    }
+
+    cmd[count] = '\0';
+
+    pr_err("%s: Command is %s . Command len is %d",WLAN_MODULE_NAME, cmd, (int)strlen(cmd));
+
+    mutex_lock(&wifi_enable_write_mutex);
+
+    if (!strncmp(cmd,CMD_START_DRIVER_HW,strlen(CMD_START_DRIVER_HW))) {
+        pr_err("%s: command is load driver.",WLAN_MODULE_NAME);
+        ret_status = wlan_boot_start();
+        if (0 != ret_status) {
+            pr_err("%s:wlan driver initialization failed ..\n", WLAN_MODULE_NAME);
+            mutex_unlock(&wifi_enable_write_mutex);
+            return -EFAULT;
+        }
+    } else if (!strncmp(cmd,CMD_STOP_DRIVER_HW,strlen(CMD_STOP_DRIVER_HW))) {
+        pr_err("%s: command is unload driver.",WLAN_MODULE_NAME);
+        if (!(wlan_loader->loaded_state)) {
+			pr_err("%s: driver already unloaded\n", WLAN_MODULE_NAME);
+			mutex_unlock(&wifi_enable_write_mutex);
+		    return -EALREADY;
+	    }
+        __hdd_module_exit();
+    }
+	else {
+        pr_err("%s: wrong command is %s .", WLAN_MODULE_NAME, cmd);
+        mutex_unlock(&wifi_enable_write_mutex);
+        return -EINVAL;
+    }
+    mutex_unlock(&wifi_enable_write_mutex);
+    pr_err("%s:wifi_driver_control_write", WLAN_MODULE_NAME);
+    return count;
+}
+
+static ssize_t mac_addr_hw_write(struct file *filp, const char __user *buf, size_t count, loff_t *off)
+{
+
+    char cmd[MAX_USER_COMMAND_HW_SIZE + 1] = {0};
+
+    if (count > MAX_USER_COMMAND_HW_SIZE) {
+       pr_err("%s: Command length %d is larger than %d bytes. ",
+                  __func__, (int)count,MAX_USER_COMMAND_HW_SIZE);
+
+        return -EINVAL;
+    }
+
+       pr_err("%s: buf length is %d, max count is %d bytes. ",
+                  __func__, (int)count, MAX_USER_COMMAND_HW_SIZE);
+
+    mutex_lock(&wifi_enable_write_mutex);
+    // TODO:  is need to free cmd
+    /* Get command from user */
+    if (copy_from_user(cmd, buf, count)) {
+        pr_err("%s: copy_from_user error.",
+                      __func__);
+        mutex_unlock(&wifi_enable_write_mutex);
+        return -EFAULT;
+    }
+
+    cmd[count] = '\0';
+
+    //mac_address:CC:BB:AA...    cmd:hex from user
+    snprintf(mac_address, MAC_ADDRESS_MAX_LEN, "%02X:%02X:%02X:%02X:%02X:%02X",
+             cmd[0], cmd[1], cmd[2],
+             cmd[3], cmd[4], cmd[5]);
+
+    if(0 > cnss_utils_set_wlan_mac_address(cmd,MAC_CMD_LENGTH))
+    {
+    pr_err("set mac address from cnss_utils failed,use wlan_mac.bin to set mac");
+    }
+    else
+    {
+    pr_err("%s: set mac address from cnss_utils complete,mac_address = %c%c:XX:XX:XX:XX:%c%c",
+                      __func__,mac_address[0],mac_address[1],mac_address[15],mac_address[16]);
+    }
+
+    mutex_unlock(&wifi_enable_write_mutex);
+
+    return count;
+}
+static int wifi_driver_status_proc_show(struct seq_file *m, void *v)
+{
+    const char *wifi_driver_status = NULL;
+    if(wlan_start_ret_val == WLAN_DRIVER_LOADED)
+        wifi_driver_status="loaded";
+    else if(wlan_start_ret_val == WLAN_DRIVER_UNLOADED)
+        wifi_driver_status="unloaded";
+    else if(wlan_start_ret_val == WLAN_DRIVER_LOADING)
+        wifi_driver_status="loading";
+    else if(wlan_start_ret_val == WLAN_DRIVER_UNLOADING)
+        wifi_driver_status="unloading";
+    else if(wlan_start_ret_val == WLAN_DRIVER_FAILED)
+        wifi_driver_status="failed";
+    else
+        wifi_driver_status="unknown";
+
+    pr_info("%s: %s: wifi_driver_status :%s;\n", WLAN_MODULE_NAME, __func__,wifi_driver_status);
+    seq_printf(m,"%s",wifi_driver_status);
+    return 0;
+}
+static const struct file_operations wifi_proc_start_file_oper = {
+    .owner = THIS_MODULE,
+    .write = wifi_driver_control_write,
+};
+
+static int wifi_mac_proc_show(struct seq_file *m, void *v)
+{
+    const char *wifi_mac_addr = NULL;
+    wifi_mac_addr = mac_address;
+    seq_printf(m,"%s",wifi_mac_addr);
+
+    return 0;
+}
+
+static int wifi_mac_addr_open(struct inode *inode,struct file *file)
+{
+    return single_open(file, wifi_mac_proc_show, NULL);
+}
+
+static const struct file_operations mac_addr_hw_file_oper = {
+    .owner = THIS_MODULE,
+    .open = wifi_mac_addr_open,
+    .write = mac_addr_hw_write,
+    .read = seq_read,
+    .llseek = seq_lseek,
+    .release = single_release,
+};
+static int wifi_driver_status_open(struct inode *inode,struct file *file)
+{
+    return single_open(file, wifi_driver_status_proc_show, NULL);
+}
+
+static const struct file_operations wifi_proc_status_file_oper = {
+    .owner = THIS_MODULE,
+    .open = wifi_driver_status_open,
+    .read = seq_read,
+    .llseek = seq_lseek,
+    .release = single_release,
+};
+int __init hw_buildin_module_init ( void)
+{
+    int ret = 0;
+    struct proc_dir_entry *wifi_start_dir = NULL;
+    struct proc_dir_entry *wifi_start_file = NULL;
+    struct proc_dir_entry *mac_addr_hw_file = NULL;
+    struct proc_dir_entry *wifi_status_file = NULL;
+
+    /* Driver initialization is delayed to change wifi_start_file */
+    pr_err("wlan: loading driver build-in\n");
+
+    wifi_start_dir = proc_mkdir(WIFI_BUILT_IN_PROC_DIR, NULL);
+    if (!wifi_start_dir) {
+        ret = -ENOMEM;
+        pr_err("wlan: loading driver build-in proc_mkdir error = %d\n", ret);
+        return ret;
+    }
+
+    wifi_start_file = proc_create(WIFI_START_PROC_FILE, S_IWUSR|S_IWGRP, wifi_start_dir, &wifi_proc_start_file_oper);
+    if (!wifi_start_file) {
+        ret = -ENOMEM;
+        pr_err("wlan: loading driver build-in proc_create wifi_start_file error = %d\n", ret);
+        return ret;
+    }
+
+    mac_addr_hw_file = proc_create(WIFI_MAC_ADDR_HW_PROC_FILE,S_IWUSR|S_IWGRP, wifi_start_dir,&mac_addr_hw_file_oper);
+    if (!mac_addr_hw_file) {
+        ret = -ENOMEM;
+        pr_info("wlan: loading driver build-in proc_create mac_addr_hw_file error = %d\n", ret);
+    }
+    wifi_status_file= proc_create(WIFI_STATUS_PROC_FILE, S_IWUSR|S_IWGRP, wifi_start_dir, &wifi_proc_status_file_oper);
+    if (!wifi_status_file) {
+        ret =  -ENOMEM;
+        pr_err("wlan: Unable to create proc_status wifi_status_file error = %d\n", ret);
+    }
+#ifdef CONFIG_HUAWEI_DSM
+	wifi_dsm_register();
+#endif
+    mutex_init(&wifi_enable_write_mutex);
+	return 0;
+}
+
+#endif
+
+//#ifdef MODULE
+#ifndef CONFIG_HUAWEI_WIFI_BUILTIN
 /**
  * hdd_module_exit() - Exit function
  *
@@ -13124,6 +13442,11 @@ static int __con_mode_handler(const char *kmessage,
 
 	hdd_info("Mode successfully changed to %s", kmessage);
 	ret = 0;
+#ifdef CONFIG_HUAWEI_WIFI_BUILTIN
+	if(con_mode == QDF_GLOBAL_FTM_MODE) {
+        pr_err("%s: WLAN driver loaded in FTM mode successfully\n", WLAN_MODULE_NAME);
+	}
+#endif
 
 reset_flags:
 	mutex_unlock(&hdd_init_deinit_lock);

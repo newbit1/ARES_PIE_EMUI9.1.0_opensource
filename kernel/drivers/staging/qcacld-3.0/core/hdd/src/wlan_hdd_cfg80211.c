@@ -2147,12 +2147,15 @@ __wlan_hdd_cfg80211_get_supported_features(struct wiphy *wiphy,
 		hdd_debug("NAN is supported by firmware");
 		fset |= WIFI_FEATURE_NAN;
 	}
+#ifdef CONFIG_HUAWEI_WIFI
+#else
 	if (sme_is_feature_supported_by_fw(RTT) &&
 	    pHddCtx->config->enable_rtt_support) {
 		hdd_debug("RTT is supported by firmware and framework");
 		fset |= WIFI_FEATURE_D2D_RTT;
 		fset |= WIFI_FEATURE_D2AP_RTT;
 	}
+#endif
 #ifdef FEATURE_WLAN_SCAN_PNO
 	if (pHddCtx->config->configPNOScanSupport &&
 	    sme_is_feature_supported_by_fw(PNO)) {
@@ -16307,10 +16310,17 @@ struct cfg80211_bss *wlan_hdd_cfg80211_inform_bss_frame(hdd_adapter_t *pAdapter,
 
 	/* Supplicant takes the signal strength in terms of mBm(100*dBm) */
 	rssi = QDF_MIN(rssi, 0) * 100;
+#ifdef CONFIG_HUAWEI_WIFI
+	hdd_debug("BSSID: " MAC_ADDRESS_STR " Channel:%d RSSI:%d TSF %u scansystimensec %lu",
+	       MAC_ADDR_ARRAY(mgmt->bssid), chan->center_freq,
+	       (int)(rssi / 100),
+	       bss_desc->timeStamp[0], bss_desc->scansystimensec);
+#else
 	hdd_debug("BSSID: " MAC_ADDRESS_STR " Channel:%d RSSI:%d TSF %u",
 	       MAC_ADDR_ARRAY(mgmt->bssid), chan->center_freq,
 	       (int)(rssi / 100),
 	       bss_desc->timeStamp[0]);
+#endif
 
 	bss_status = wlan_hdd_cfg80211_inform_bss_frame_data(wiphy, chan, mgmt,
 							     frame_len, rssi,

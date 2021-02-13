@@ -38,6 +38,11 @@
 #include <cds_concurrency.h>
 #include <linux/ctype.h>
 
+#ifdef CONFIG_HUAWEI_WIFI
+#include <hdd_auto_config_ini.h>
+extern QDF_STATUS hdd_auto_config_ini(const struct firmware **fw, hdd_context_t *pHddCtx);
+#endif
+
 static void
 cb_notify_set_roam_prefer5_g_hz(hdd_context_t *pHddCtx, unsigned long notifyId)
 {
@@ -8058,9 +8063,14 @@ static void hdd_set_rx_mode_value(hdd_context_t *hdd_ctx)
  */
 QDF_STATUS hdd_parse_config_ini(hdd_context_t *pHddCtx)
 {
-	int status = 0;
+#ifdef CONFIG_HUAWEI_WIFI
 	int i = 0;
+#else
+	int status, i = 0;
 	int retry = 0;
+#endif
+
+
 	/** Pointer for firmware image data */
 	const struct firmware *fw = NULL;
 	char *buffer, *line, *pTemp = NULL;
@@ -8071,7 +8081,12 @@ QDF_STATUS hdd_parse_config_ini(hdd_context_t *pHddCtx)
 	QDF_STATUS qdf_status = QDF_STATUS_SUCCESS;
 
 	memset(cfgIniTable, 0, sizeof(cfgIniTable));
-
+#ifdef CONFIG_HUAWEI_WIFI
+	qdf_status = hdd_auto_config_ini(&fw, pHddCtx);
+	if (qdf_status == QDF_STATUS_E_FAILURE)
+		goto config_exit;
+#else
+	pr_info("wlan:hdd_parse_config_ini\n");
 	do {
 		if (status == -EAGAIN)
 			msleep(HDD_CFG_REQUEST_FIRMWARE_DELAY);
@@ -8087,6 +8102,7 @@ QDF_STATUS hdd_parse_config_ini(hdd_context_t *pHddCtx)
 		qdf_status = QDF_STATUS_E_FAILURE;
 		goto config_exit;
 	}
+#endif
 	if (!fw || !fw->data || !fw->size) {
 		hdd_alert("%s download failed", WLAN_INI_FILE);
 		qdf_status = QDF_STATUS_E_FAILURE;

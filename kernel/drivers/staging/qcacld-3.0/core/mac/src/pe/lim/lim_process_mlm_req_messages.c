@@ -1949,12 +1949,21 @@ lim_process_mlm_deauth_req_ntf(tpAniSirGlobal mac_ctx,
 			 * Associated nor Pre-authenticated. Log error,
 			 * Prepare and Send LIM_MLM_DEAUTH_CNF
 			 */
+#ifdef CONFIG_HUAWEI_WIFI
+			pe_warn("received MLM_DEAUTH_REQ in mlme state %d for STA that "
+				   "does not have context, Addr="
+				   HW_MAC_ADDRESS_STR,
+				session->limMlmState,
+				HW_MAC_ADDR_ARRAY(
+					mlm_deauth_req->peer_macaddr.bytes));
+#else
 			pe_warn("received MLM_DEAUTH_REQ in mlme state %d for STA that "
 				   "does not have context, Addr="
 				   MAC_ADDRESS_STR,
 				session->limMlmState,
 				MAC_ADDR_ARRAY(
 					mlm_deauth_req->peer_macaddr.bytes));
+#endif
 			mlm_deauth_cnf.resultCode =
 				eSIR_SME_STA_NOT_AUTHENTICATED;
 		} else {
@@ -2372,9 +2381,15 @@ void lim_process_join_failure_timeout(tpAniSirGlobal mac_ctx)
 		lim_deactivate_and_change_timer(mac_ctx,
 					eLIM_PERIODIC_JOIN_PROBE_REQ_TIMER);
 		/* Issue MLM join confirm with timeout reason code */
+#ifdef CONFIG_HUAWEI_WIFI
+		pe_err("Join Failure Timeout, In eLIM_MLM_WT_JOIN_BEACON_STATE session:%d "
+			   HW_MAC_ADDRESS_STR,
+			session->peSessionId, HW_MAC_ADDR_ARRAY(session->bssId));
+#else
 		pe_err("Join Failure Timeout, In eLIM_MLM_WT_JOIN_BEACON_STATE session:%d "
 			   MAC_ADDRESS_STR,
 			session->peSessionId, MAC_ADDR_ARRAY(session->bssId));
+#endif
 
 		mlm_join_cnf.resultCode = eSIR_SME_JOIN_TIMEOUT_RESULT_CODE;
 		mlm_join_cnf.protStatusCode = eSIR_MAC_UNSPEC_FAILURE_STATUS;

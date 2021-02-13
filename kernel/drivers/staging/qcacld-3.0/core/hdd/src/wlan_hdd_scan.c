@@ -52,6 +52,9 @@
 #define HDD_SCAN_REJECT_RATE_LIMIT 5
 #define HDD_DBS_SCAN_DISABLE_RATE_LIMIT 10
 
+const int FAST_SCAN_ITERATIONS_QCOM = 6;
+const int SLOW_SCAN_INTERVAL_QCOM = 120;
+
 /**
  * enum essid_bcast_type - SSID broadcast type
  * @eBCAST_UNKNOWN: Broadcast unknown
@@ -3689,7 +3692,18 @@ int wlan_hdd_cfg80211_sched_scan_start(struct wiphy *wiphy,
 				       *request)
 {
 	int ret;
+	int is_qcom;
+	struct device_node *dp = NULL;
+	const char *wifi_chip_type = NULL;
 
+	dp = of_find_node_by_path("/huawei_wifi_info");
+	wifi_chip_type = of_get_property(dp, "wifi,chiptype", NULL);
+	is_qcom = strncmp(wifi_chip_type, "WIFI_QUALCOMM_WCN3980", strlen("WIFI_QUALCOMM_WCN3980"));
+	if ((wifi_chip_type != NULL) && (is_qcom == 0) &&
+		(request->n_scan_plans == SIR_PNO_MAX_PLAN_REQUEST)) {
+		request->scan_plans[0].iterations = FAST_SCAN_ITERATIONS_QCOM;
+		request->scan_plans[1].interval = SLOW_SCAN_INTERVAL_QCOM;
+	}
 	cds_ssr_protect(__func__);
 	ret = __wlan_hdd_cfg80211_sched_scan_start(wiphy, dev, request);
 	cds_ssr_unprotect(__func__);
